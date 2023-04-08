@@ -26,6 +26,12 @@
     </RunParams>
     <RequiredPackages>
       <Item>
+        <PackageName Value="sqlite3laz"/>
+      </Item>
+      <Item>
+        <PackageName Value="FCL"/>
+      </Item>
+      <Item>
         <PackageName Value="LCL"/>
       </Item>
     </RequiredPackages>
@@ -55,6 +61,9 @@
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Linking>
+      <Debugging>
+        <DebugInfoType Value="dsDwarf2Set"/>
+      </Debugging>
       <Options>
         <Win32>
           <GraphicApplication Value="True"/>
