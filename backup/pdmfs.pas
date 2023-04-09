@@ -13,14 +13,20 @@ type
   { Tzcad }
 
   Tzcad = class(TForm)
+    CreateBtn: TButton;
+    DelBtn: TButton;
+    FindBtn: TButton;
     CreateSF: TButton;
-    DataSource1: TDataSource;
-    DBGrid1: TDBGrid;
+    ds: TDataSource;
+    ReNameBtn: TButton;
+    ProjGrid: TDBGrid;
     DelSF: TButton;
-    Edit1: TEdit;
-    Edit2: TEdit;
+    DesignE: TEdit;
+    NameE: TEdit;
+    FindE: TEdit;
     Label1: TLabel;
     Label2: TLabel;
+    Label3: TLabel;
     OpenSF: TButton;
     PageControl1: TPageControl;
     rbAdmin: TRadioButton;
@@ -29,24 +35,29 @@ type
     selSF: TButton;
     SFPathAdmin: TEdit;
     SFPathClient: TEdit;
-    SQLite3Connection1: TSQLite3Connection;
-    Sqlite3Dataset1: TSqlite3Dataset;
-    SQLQuery1: TSQLQuery;
-    SQLTransaction1: TSQLTransaction;
+    dbCon: TSQLite3Connection;
+    dataSet: TSqlite3Dataset;
+    q: TSQLQuery;
+    Transact: TSQLTransaction;
     TabSheet1: TTabSheet;
     TabSheet2: TTabSheet;
+    procedure CreateBtnClick(Sender: TObject);
     procedure CreateSFClick(Sender: TObject);
+    procedure DelBtnClick(Sender: TObject);
     procedure DelSFClick(Sender: TObject);
+    procedure FindBtnClick(Sender: TObject);
     procedure OpenSFClick(Sender: TObject);
+    procedure ProjGridCellClick(Column: TColumn);
     procedure rbAdminChange(Sender: TObject);
     procedure rbClientChange(Sender: TObject);
+    procedure ReNameBtnClick(Sender: TObject);
     procedure selSFClick(Sender: TObject);
     procedure showDB(Sender: TObject);
-    procedure SQLite3Connection1AfterConnect(Sender: TObject);
+    procedure dbConAfterConnect(Sender: TObject);
   private
-
+         id, FfsPath : String;
   public
-
+        property PathFS : String read FfsPath write FfsPath;
   end;
 
 var
@@ -78,7 +89,54 @@ begin
     fsPath:=sd.FileName;
   end
   else exit;
+  PathFS:=sd.FileName;
   ShellExecute(0,PChar('cmd.exe /c net share folder='+fsPath),nil,nil,nil,1);
+end;
+
+procedure Tzcad.DelBtnClick(Sender: TObject);
+begin
+  if ProjGrid.DataSource.DataSet.FieldByName('Name').AsString = '' then
+  begin
+    ShowMessage('Выберите проект');
+    exit;
+  end;
+  dataSet.Close;
+  with q do
+  begin
+    SQL.Clear;
+    SQL.Add('delete from Project where ID = '+ id);
+    ExecSQL;
+    Transact.Commit;
+    Close;
+  end;
+  dataSet.Open;
+end;
+
+procedure Tzcad.CreateBtnClick(Sender: TObject);
+begin
+  if PathFS = '' then
+  begin
+    ShowMessage('Выберите общую папку');
+    exit;
+  end;
+  CreateDir(PathFS + '\' + DesignE.Text + ' _ ' + NameE.Text);
+  if (NameE.Text = '') or (DesignE.Text = '') then
+  begin
+    ShowMessage('Введите обозначение и наименование');
+    exit;
+  end;
+
+  dataSet.Close;
+  with q do
+  begin
+    SQL.Clear;
+    SQL.Add('insert into Project(Designator, Name) values'+
+    '('+ QuotedStr(DesignE.Text) +','+ QuotedStr(NameE.Text) +')');
+    ExecSQL;
+    Transact.Commit;
+    Close;
+  end;
+  dataSet.Open;
 end;
 
 procedure Tzcad.DelSFClick(Sender: TObject);
@@ -89,13 +147,27 @@ begin
      end;
 end;
 
+procedure Tzcad.FindBtnClick(Sender: TObject);
+begin
+     if FindE.Text = '' then
+     begin
+       ShowMessage('Введите обозначение для поиска');
+       exit;
+     end;
+     dataSet.Locate('Designator',FindE.Text,[]);
+end;
+
 procedure Tzcad.OpenSFClick(Sender: TObject);
 var
   path : string;
 begin
      path := SFPathAdmin.Text;
      ExecuteProcess(AnsiString('explorer.exe'),path,[]);
+end;
 
+procedure Tzcad.ProjGridCellClick(Column: TColumn);
+begin
+  id := ProjGrid.DataSource.DataSet.FieldByName('ID').AsString;
 end;
 
 procedure Tzcad.rbClientChange(Sender: TObject);
@@ -107,37 +179,44 @@ begin
   end;
 end;
 
+procedure Tzcad.ReNameBtnClick(Sender: TObject);
+var
+  NameProj, Design : string;
+begin
+  NameProj:= ProjGrid.DataSource.DataSet.FieldByName('Name').AsString;
+  Design:= ProjGrid.DataSource.DataSet.FieldByName('Designator').AsString;
+    dataSet.Close;
+  with q do
+  begin
+    SQL.Clear;
+    SQL.Add('update project set designator = '+ QuotedStr(Design) +' ,'+ 'name ='+
+                    QuotedStr(NameProj)+ 'where id ='+ id);
+    ExecSQL;
+    Transact.Commit;
+    Close;
+  end;
+  dataSet.Open;
+end;
+
 procedure Tzcad.selSFClick(Sender: TObject);
 begin
   if sd.Execute then
   SFPathClient.Text:=sd.FileName else exit;
+  PathFS:=sd.FileName;
 end;
 
 procedure Tzcad.showDB(Sender: TObject);
 begin
-    {Параметры компонентов работы с базой
-    Можно выставить в опциях у каждого компонента.}
-    //*******************************
-    SQLite3Dataset1.FileName:='MainDB';
-    SQLite3Dataset1.TableName:='Project';
-    DataSource1.DataSet:=SQLite3Dataset1;
-    SQLite3Connection1.DatabaseName:='MainDB';
-    SQLite3Connection1.Transaction:=SQLTransaction1;
-    SQLTransaction1.DataBase:=SQLite3Connection1;
-    SQLQuery1.DataBase:=SQLite3Connection1;
-    SQLQuery1.Transaction:=SQLTransaction1;
-    //*******************************
-
-    try
-       SQLite3Dataset1.Open;
-       SQLite3Connection1.Connected:=True;
-    except
-       On E:Exception do
-          ShowMessage('Ошибка открытия базы: '+ E.Message);
-    end;
+  try
+     dataSet.Open;
+     dbCon.Connected:=True;
+  except
+     On E:Exception do
+        ShowMessage('Ошибка открытия базы: '+ E.Message);
+  end;
 end;
 
-procedure Tzcad.SQLite3Connection1AfterConnect(Sender: TObject);
+procedure Tzcad.dbConAfterConnect(Sender: TObject);
 begin
 
 end;

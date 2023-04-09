@@ -1,7 +1,7 @@
 object zcad: Tzcad
-  Left = 739
+  Left = 886
   Height = 240
-  Top = 360
+  Top = 198
   Width = 720
   BorderIcons = [biSystemMenu, biMinimize]
   BorderStyle = bsSingle
@@ -15,9 +15,9 @@ object zcad: Tzcad
     Height = 240
     Top = 0
     Width = 720
-    ActivePage = TabSheet2
+    ActivePage = TabSheet1
     Align = alClient
-    TabIndex = 1
+    TabIndex = 0
     TabOrder = 0
     object TabSheet1: TTabSheet
       Caption = 'Настройки'
@@ -99,7 +99,7 @@ object zcad: Tzcad
       Caption = 'Создание проекта'
       ClientHeight = 212
       ClientWidth = 712
-      object Edit1: TEdit
+      object DesignE: TEdit
         Left = 88
         Height = 23
         Top = 8
@@ -122,23 +122,90 @@ object zcad: Tzcad
         Caption = 'Наименование'
         ParentColor = False
       end
-      object Edit2: TEdit
+      object NameE: TEdit
         Left = 88
         Height = 23
         Top = 50
         Width = 152
         TabOrder = 1
       end
-      object DBGrid1: TDBGrid
-        Left = 512
+      object ProjGrid: TDBGrid
+        Left = 504
         Height = 212
         Top = 0
-        Width = 200
+        Width = 208
         Align = alRight
         Color = clWindow
-        Columns = <>
-        DataSource = DataSource1
+        Columns = <        
+          item
+            Title.Caption = 'Обозначение'
+            Width = 82
+            FieldName = 'Designator'
+          end        
+          item
+            Title.Caption = 'Наименование'
+            Width = 92
+            FieldName = 'Name'
+          end        
+          item
+            Title.Caption = 'ID'
+            Visible = False
+            FieldName = 'ID'
+          end>
+        DataSource = ds
         TabOrder = 2
+        OnCellClick = ProjGridCellClick
+      end
+      object FindE: TEdit
+        Left = 88
+        Height = 23
+        Top = 95
+        Width = 152
+        TabOrder = 3
+      end
+      object Label3: TLabel
+        Left = 0
+        Height = 15
+        Top = 100
+        Width = 35
+        Caption = 'Поиск'
+        ParentColor = False
+      end
+      object CreateBtn: TButton
+        Left = 296
+        Height = 25
+        Top = 8
+        Width = 75
+        Caption = 'Создать'
+        OnClick = CreateBtnClick
+        TabOrder = 4
+      end
+      object FindBtn: TButton
+        Left = 296
+        Height = 25
+        Top = 93
+        Width = 75
+        Caption = 'Найти'
+        OnClick = FindBtnClick
+        TabOrder = 5
+      end
+      object ReNameBtn: TButton
+        Left = 387
+        Height = 25
+        Top = 176
+        Width = 96
+        Caption = 'Переименовать'
+        OnClick = ReNameBtnClick
+        TabOrder = 6
+      end
+      object DelBtn: TButton
+        Left = 296
+        Height = 25
+        Top = 50
+        Width = 75
+        Caption = 'Удалить'
+        OnClick = DelBtnClick
+        TabOrder = 7
       end
     end
   end
@@ -146,39 +213,40 @@ object zcad: Tzcad
     Left = 556
     Top = 212
   end
-  object SQLite3Connection1: TSQLite3Connection
+  object dbCon: TSQLite3Connection
     Connected = False
     LoginPrompt = False
-    AfterConnect = SQLite3Connection1AfterConnect
+    AfterConnect = dbConAfterConnect
     DatabaseName = 'MainDB'
     KeepConnection = True
+    Transaction = Transact
     AlwaysUseBigint = False
     Left = 472
     Top = 192
   end
-  object Sqlite3Dataset1: TSqlite3Dataset
+  object dataSet: TSqlite3Dataset
     FileName = 'MainDB'
-    SQL = 'Select * from Project where 1 = 0'
     TableName = 'Project'
-    MasterSource = DataSource1
-    Active = True
     Left = 472
     Top = 144
   end
-  object DataSource1: TDataSource
-    DataSet = Sqlite3Dataset1
+  object ds: TDataSource
+    DataSet = dataSet
     Left = 472
     Top = 104
   end
-  object SQLQuery1: TSQLQuery
+  object q: TSQLQuery
     FieldDefs = <>
+    Database = dbCon
+    Transaction = Transact
     Params = <>
     Macros = <>
     Left = 472
     Top = 64
   end
-  object SQLTransaction1: TSQLTransaction
+  object Transact: TSQLTransaction
     Active = False
+    Database = dbCon
     Left = 472
     Top = 24
   end
